@@ -13,11 +13,14 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/gin-contrib/cors"
+	"github.com/gin-contrib/secure"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 )
 
 func main() {
+	gin.SetMode(gin.ReleaseMode)
 	pool := databasePkg.GetPoolDb()
 	defer func() {
 		log.Println("Database pool is closing...")
@@ -25,11 +28,39 @@ func main() {
 	}()
 	validate := validator.New()
 	app := gin.New()
+	proxies := []string{
+		"localhost:3000",
+		"localhost:5173",
+		"localhost:4000",
+		"127.0.0.1:3000",
+		"127.0.0.1:5173",
+		"127.0.0.1:4000",
+	}
+	app.SetTrustedProxies(proxies)
 	srv := &http.Server{
 		Addr:    ":4000",
 		Handler: app.Handler(),
 	}
 
+	app.Use(secure.New(secure.Config{
+		AllowedHosts:          proxies,
+		FrameDeny:             true,
+		ContentTypeNosniff:    true,
+		STSSeconds:            315360000,
+		STSIncludeSubdomains:  true,
+		BrowserXssFilter:      true,
+		IsDevelopment:         false,
+		ReferrerPolicy:        "strict-origin-when-cross-origin",
+		IENoOpen:              true,
+		ContentSecurityPolicy: "default-src 'self'",
+		SSLProxyHeaders:       map[string]string{"X-Forwarded-Proto": "https"},
+	}))
+	app.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:3000", "http://localhost:5173"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "OPTION", "PATCH", "DELETE", "HEAD"},
+		AllowCredentials: true,
+		AllowHeaders:     []string{"Authorization", "Content-Type", "Accept", "Origin"},
+	}))
 	app.Use(gin.Logger())
 	app.Use(gin.Recovery())
 
