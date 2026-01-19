@@ -1,0 +1,6 @@
+*.env
+*.keys
+*.key
+tmp
+*.exe
+bin

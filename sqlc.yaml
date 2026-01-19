@@ -1,0 +1,12 @@
+version: "2"
+sql:
+  - engine: "postgresql"
+    queries: "./modules/todo_sevices/scripts/query.sql"
+    schema: "./modules/todo_sevices/scripts/schema.sql"
+    gen:
+      go:
+        package: "todoRepository"
+        out: "./modules/todo_sevices/repositories/"
+        sql_package: "pgx/v5"
+        emit_json_tags: true
+        emit_interface: true
